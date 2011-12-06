@@ -3,7 +3,7 @@ Contributors: bradvin
 Requires at least: 3.1
 Tested up to: 3.3 Beta 3
 Donate link: http://themergency.com/donate/
-Tags: notifications,alerts,bar,foobar,hellobar
+Tags: notifications,alerts,bar,foobar
 Stable tag: trunk
 
 Show an awesome looking notification bar on your website, that you can customize to match your theme.
