@@ -3,7 +3,7 @@
 Plugin Name: Foobar Lite Notification Bars
 Plugin URI: themergency.com/foobar-wordpress-plugin/
 Description: Show an awesome looking notification bar on your website. PLEASE NOTE : This is the free version with limited functionality. <strong><a target="_blank" href="http://themergency.com/foobar-wordpress-plugin/"><b>Get the full version</a></strong>.
-Version: 1.0
+Version: 1.1
 Author: Brad Vincent
 Author URI: http://themergency.com/
 License: GPL2
@@ -15,10 +15,10 @@ define('FOOBAR_FILE_JS', 'jquery.foobar.lite.min.js');
 if (!class_exists('FoobarLiteNotifications')) {
 
     // Includes
-    require_once "includes/WP_PluginBase.php";
+    require_once "includes/WP_PluginBaseLite.php";
     require_once "includes/foobar-lite-js-generator.php";
 
-    class FoobarLiteNotifications extends WP_PluginBase {
+    class FoobarLiteNotifications extends WP_PluginBaseLite {
 	
         function admin_settings_init() {
 
@@ -145,17 +145,6 @@ if (!class_exists('FoobarLiteNotifications')) {
               'tab'     => 'Advanced'
           ) );
           
-          $this->admin_settings_add( array(
-              'id'      => 'custom_css',
-              'title'   => __( 'Custom CSS' ),
-              'desc'    => __( 'Any custom CSS you want to add' ),
-              'std'     => '',
-              'type'    => 'textarea',
-              'section' => '',
-              'tab'     => 'Advanced',
-              'class'   => 'medium_textarea'
-          ) );
-          
           if ( $this->get_option('show_debug') == 'on' ) {
             $this->admin_settings_add( array(
                 'id'      => 'debug_info',
@@ -180,6 +169,8 @@ if (!class_exists('FoobarLiteNotifications')) {
 
           //call base init
           parent::init();
+          
+          $this->_plugin_name = 'foobar-lite';
 
           if ( is_admin() ) {
           
@@ -190,12 +181,31 @@ if (!class_exists('FoobarLiteNotifications')) {
             }
 
             add_filter( 'plugin_action_links_'.plugin_basename(__FILE__), array(&$this, 'admin_plugin_actions'), -10);
+          } else {
+            
+            add_action('wp_enqueue_scripts',  array(&$this, "frontend_foobar_js_and_css") );
+            add_action('wp_head', array(&$this, 'frontend_footer_dynamic_js') );
+            
           }
         }
 
         //plugin version
         function current_plugin_version() {
-            return '1.0';
+            return '1.1';
+        }
+        
+        // register foobar CSS scripts in frontend
+        function frontend_foobar_js_and_css() {
+          if ( !$this->frontend_has_foobar() ) return;
+        
+          $this->admin_foobar_css_enqueue();
+          $this->admin_foobar_js_enqueue();
+        }
+        
+        function frontend_footer_dynamic_js() {
+          if ( !$this->frontend_has_foobar() ) return;
+          
+          $this->admin_footer_dynamic_js();
         }
 
         // register foobar CSS scripts in admin
@@ -205,7 +215,7 @@ if (!class_exists('FoobarLiteNotifications')) {
 
         // register foobar JS scripts in admin
         function admin_foobar_js_enqueue() {
-          $this->register_and_enqueue_js(FOOBAR_FILE_JS);
+          $this->register_and_enqueue_js(FOOBAR_FILE_JS, $this->get_foobar_js_depends());
         }
         
         function admin_footer_dynamic_js() {
@@ -245,11 +255,6 @@ if (!class_exists('FoobarLiteNotifications')) {
           }
         }
 
-        function frontend_init() {
-          add_action( 'parse_request', array(&$this, 'frontend_dynamic_css_request') );
-          add_action( 'parse_request', array(&$this, 'frontend_dynamic_js_request') );
-        }
-
         function frontend_has_foobar() {
           global $has_checked_for_foobar;
           global $has_foobar;
@@ -268,92 +273,12 @@ if (!class_exists('FoobarLiteNotifications')) {
           return $has_foobar;
         }
 
-        function frontend_css_enqueue() {
-          if ( !$this->frontend_has_foobar() ) return;
-
-          //enqueue foobar CSS
-          $this->register_and_enqueue_css(FOOBAR_FILE_CSS);
-          
-          //the dynamic CSS handle
-          $handle = $this->_plugin_name . '-css-dynamic';
-
-          //get the URL to our dynamic CSS
-          $css_url = get_bloginfo( 'url' ) . '/?' . $handle . '=css&ver='. $this->current_plugin_version();
-
-          //register it!
-          wp_register_style(
-                  $handle = $handle,
-                  $src = $css_url,
-                  $deps = false,
-                  $ver = '' );
-
-          //enqueue it!
-          wp_enqueue_style($handle);
-        }
-
-        function frontend_dynamic_css_request() {
-          global $foobar_css;
-
-          $handle = $this->_plugin_name . '-css-dynamic';
-
-          if ( !empty( $_GET[$handle] ) && $_GET[$handle] == 'css' ) {
-            //get custom CSS from the settings page
-            $foobar_css = $this->get_option( 'custom_css' );
-
-            $css_file = $this->_plugin_dir . 'css/' . $this->_plugin_name . '.css.php';
-
-            require $css_file;
-            exit;
-          }
-        }
-
-        function frontend_js_enqueue() {
-          if ( !$this->frontend_has_foobar() ) return;
-
-          //enqueue foobar script
-          $this->register_and_enqueue_js(FOOBAR_FILE_JS, $this->get_foobar_js_depends());
-
-          //the dynamic JS handle
-          $handle = $this->_plugin_name . '-js-dynamic';
-
-          //get the URL to our dynamic JS
-          $js_url = get_bloginfo( 'url' ) . '/?' . $handle . '=js&ver=' . $this->current_plugin_version();
-
-          //register it!
-          wp_register_script(
-              $handle = $handle,
-              $src = $js_url,
-              $deps = false,
-              $ver = '' );
-
-          //enqueue it!
-          wp_enqueue_script($handle);
-        }
-
-        function frontend_dynamic_js_request() {
-          global $foobar_js;
-
-          $handle = $this->_plugin_name . '-js-dynamic';
-
-          if ( !empty( $_GET[$handle] ) && $_GET[$handle] == 'js' ) {
-            $options = get_option( $this->_plugin_name );
-
-            //generate the JS needed for the foobar
-            $foobar_js = FoobarLiteJSGenerator::generate($options, $this->_plugin_url);
-
-            $js_file = $this->_plugin_dir . 'js/' . $this->_plugin_name . '.js.php';
-
-            require $js_file;
-            exit;
-          }
-        }
-
         function get_foobar_js_depends() {
-          if ($this->get_option('foobar_exclude_jquery') != 'on') {
-            return array('jquery');
+          if ($this->get_option('foobar_exclude_jquery') == 'on') {
+            return array();
           }
 
-          return false;
+          return array('jquery');
         }
 
     }

@@ -2,7 +2,7 @@
 /*
 WP PluginBase
 A simple base class for WordPress plugins. This class makes it really easy and straight forward to create useful plugins.
-Simply inherit from WP_Pluginbase and override the methods of your choice.
+Simply inherit from WP_PluginBaseLite and override the methods of your choice.
 Version: 1
 Author: Brad Vincent
 Author URI: http://themergency.com/
@@ -14,17 +14,9 @@ extract all overridable functions out into another file somehow
 
 */
 
+if (!class_exists('WP_PluginBaseLite')) {
 
-
-
-define('WPPB_LOAD_ADMIN', 1);
-define('WPPB_LOAD_ADMIN_SETTINGS', 2);
-define('WPPB_LOAD_FRONT', 4);
-define('WPPB_LOAD_FRONT_HOME', 8);
-
-if (!class_exists('WP_PluginBase')) {
-
-    abstract class WP_PluginBase {
+    abstract class WP_PluginBaseLite {
         protected $_file;                 //the filename of the plugin
         protected $_plugin_dir;           //the folder path of the plugin
         protected $_plugin_dir_name;      //the folder name of the plugin
@@ -41,14 +33,14 @@ if (!class_exists('WP_PluginBase')) {
 
         /* overridable variables */
         protected $_has_settings = true;     //does the plugin have options?
-        protected $_when_to_load_default_js = WPPB_LOAD_ADMIN_SETTINGS;	//only load the default js on the settings page
-        protected $_when_to_load_default_css = WPPB_LOAD_ADMIN_SETTINGS;	//only load the default css on the settings page
+        protected $_when_to_load_default_js = 2;	//only load the default js on the settings page
+        protected $_when_to_load_default_css = 2;	//only load the default css on the settings page
         
         protected $_load_dynamic_css = true;
         protected $_load_dynamic_js = true;
 
         //PHP 4 constructor
-        function WP_PluginBase() {
+        function WP_PluginBaseLite() {
             $this->__construct();
         }
 
@@ -61,7 +53,7 @@ if (!class_exists('WP_PluginBase')) {
             //check we are using php 5
             $this->check_php_version('5.0.0');
 
-            //use reflection to get the filename of the subclass that is inheriting from WP_PluginBase
+            //use reflection to get the filename of the subclass that is inheriting from WP_PluginBaseLite
             $reflector = new ReflectionObject($this);
             $this->_file = $reflector->getFilename();
             $this->_plugin_dir = dirname($this->_file) . '/';
@@ -148,16 +140,16 @@ if (!class_exists('WP_PluginBase')) {
         function check_can_load($input) {
             $can_load = false;
             
-            if ($input === (WPPB_LOAD_ADMIN & $input)) {
+            if ($input === (1 & $input)) {
                 $can_load = is_admin();
             } 
-            if ($input === (WPPB_LOAD_ADMIN_SETTINGS & $input)) {
+            if ($input === (2 & $input)) {
                 $can_load = $this->check_admin_settings_page();
             }
-            if ($input === (WPPB_LOAD_FRONT & $input)) {
+            if ($input === (4 & $input)) {
                 $can_load = !is_admin();
             }
-            if ($input === (WPPB_LOAD_FRONT_HOME & $input)) {
+            if ($input === (8 & $input)) {
                 $can_load = is_front_page();
             }
 
